@@ -38,23 +38,18 @@ python setup.py install
 
 ## Running
 * Download all the data files and place them into data folder
-* `deepgoplus --data-root <path_to_data_folder> --in-file <input_fasta_filename>`
 
 
 ## Scripts
 The scripts require GeneOntology in OBO Format.
-* uni2pandas.py - This script is used to convert data from UniProt
-database format to pandas dataframe.
-* deepgoplus_data.py - This script is used to generate training and
-  testing datasets.
-* deepgoplus.py - This script is used to train the model
-* evaluate_*.py - The scripts are used to compute Fmax, Smin and AUPR
-
-The online version of DeepGOPlus is available at http://deepgoplus.bio2vec.net/
+* uni2pandas.py - This script is used to convert data from UniProt database format to pandas dataframe.
+* po2go_data.py - This script is used to generate training and testing datasets.
+* train_po2go.py - This script is used to train the model.
+* evaluate_*.py - The scripts are used to compute Fmax, Smin and AUPR.
 
 ## Citation
 
-If you use DeepGOPlus for your research, or incorporate our learning algorithms in your work, please cite:
+If you use PO2Vec for your research, or incorporate our learning algorithms in your work, please cite:
 
 
 
