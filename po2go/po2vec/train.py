@@ -1,27 +1,20 @@
 import argparse
 import logging
-import math
 import os
 import pickle
-import random
-from contextlib import contextmanager
-
-import esm
-import numpy as np
 import pandas as pd
 import torch
-import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
-from torch.utils.data import DataLoader, Dataset, random_split
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from losses import ConPairLoss
 from utils import con_pair_dataset, set_random_seed
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3,4,5,6,7'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
 
 
 # 0.6513
@@ -33,11 +26,11 @@ def main():
                         help='Path to store data')
     parser.add_argument('--model_path',
                         '-mp',
-                        default='models/weight_triple',
+                        default='models',
                         help='Path to save model')
     parser.add_argument('--summary_path',
                         '-sp',
-                        default='logs/triple',
+                        default='logs',
                         help='Path to save summary')
     parser.add_argument('--model_load',
                         '-ml',
@@ -74,17 +67,14 @@ def main():
         os.path.join(args.summary_path, 'exper_triple.txt'))
     logger.addHandler(f_handler)
 
-    ### INPUT FILES ###
     # Gene Ontology file in OBO Format
-    go_file = os.path.join(args.data_path, u'go-basic.obo')
+    go_file = os.path.join(args.data_path, u'go.obo')
     # Result file with a list of terms for prediction task
     out_terms_file = os.path.join(args.data_path, u'terms_all.pkl')
     pair_file = os.path.join(args.data_path, u'contra_part_pairs_all.pkl')
     contrast_file = os.path.join(args.data_path, u'contrast_pairs.pkl')
 
     data_path_dict = {}
-
-    ### INPUT FILES ###
     data_path_dict['go'] = go_file
     data_path_dict['terms'] = out_terms_file
 

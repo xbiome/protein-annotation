@@ -4,7 +4,6 @@ from collections import Counter, deque
 
 import numpy as np
 import torch
-from aminoacids import MAXLEN, to_label_index, to_onehot
 from numpy.random import randint
 from sklearn.metrics import (auc, confusion_matrix, precision_recall_curve,
                              roc_curve)
@@ -29,18 +28,19 @@ NAMESPACES = {
 # Gene Ontology based on .obo File
 
 
+# Gene Ontology based on .obo File
 class Ontology(object):
     def __init__(self,
-                 filename='data/go.obo',
+                 filename='../data/go-basic.obo',
                  with_rels=False,
-                 include_alt_id=True):
+                 include_alt_ids=True):
         super().__init__()
         self.ont, self.format_version, self.data_version = self.load(
-            filename, with_rels, include_alt_id)
+            filename, with_rels, include_alt_ids)
         self.ic = None
 
     # ------------------------------------
-    def load(self, filename, with_rels, include_alt_id):
+    def load(self, filename, with_rels, include_alt_ids):
         ont = dict()
         format_version = []
         data_version = []
@@ -50,7 +50,7 @@ class Ontology(object):
                 line = line.strip()
                 if not line:
                     continue
-                # format version line
+                    # format version line
                 if line.startswith('format-version:'):
                     l = line.split(': ')
                     format_version = l[1]
@@ -90,7 +90,7 @@ class Ontology(object):
                         obj['is_a'].append(l[1].split(' ! ')[0])
                     elif with_rels and l[0] == 'relationship':
                         it = l[1].split()
-                        # add all types of relationships revised. adjustment
+                        # add all types of relationships revised
                         if it[0] == 'part_of':
                             obj['part_of'].append(it[1])
                         obj['relationship'].append([it[1], it[0]])
@@ -100,9 +100,9 @@ class Ontology(object):
                         obj['is_obsolete'] = True
             if obj is not None:
                 ont[obj['id']] = obj
-        # dealing with alt_ids. adjustment
+        # dealing with alt_ids, why
         for term_id in list(ont.keys()):
-            if include_alt_id:
+            if include_alt_ids:
                 for t_id in ont[term_id]['alt_ids']:
                     ont[t_id] = ont[term_id]
             if ont[term_id]['is_obsolete']:
@@ -111,7 +111,7 @@ class Ontology(object):
         for term_id, val in ont.items():
             if 'children' not in val:
                 val['children'] = set()
-            for p_id in val['is_a']:
+            for p_id in val['is_a'] + val['part_of']:
                 if p_id in ont:
                     if 'children' not in ont[p_id]:
                         ont[p_id]['children'] = set()
@@ -148,7 +148,37 @@ class Ontology(object):
             return 0.0
         return self.ic[go_id]
 
+    # revised 'part_of'
     def get_ancestors(self, term_id):
+        if term_id not in self.ont:
+            return set()
+        term_set = set()
+        q = deque()
+        q.append(term_id)
+        while (len(q) > 0):
+            t_id = q.popleft()
+            if t_id not in term_set:
+                term_set.add(t_id)
+                for parent_id in (self.ont[t_id]['is_a'] +
+                                  self.ont[t_id]['part_of']):
+                    if parent_id in self.ont:
+                        q.append(parent_id)
+        # terms_set.remove(term_id)
+        return term_set
+
+    # revised
+    def get_parents(self, term_id):
+        if term_id not in self.ont:
+            return set()
+        term_set = set()
+        for parent_id in (self.ont[term_id]['is_a'] +
+                          self.ont[term_id]['part_of']):
+            if parent_id in self.ont:
+                term_set.add(parent_id)
+        return term_set
+
+    # get the root terms(only is_a)
+    def get_root_ancestors(self, term_id):
         if term_id not in self.ont:
             return set()
         term_set = set()
@@ -164,31 +194,11 @@ class Ontology(object):
         # terms_set.remove(term_id)
         return term_set
 
-    # adjustment
-    def get_parents(self, term_id):
-        if term_id not in self.ont:
-            return set()
-        term_set = set()
-        for parent_id in self.ont[term_id]['is_a']:
-            if parent_id in self.ont:
-                term_set.add(parent_id)
-        return term_set
-
-    def get_part_of(self, term_id):
-        if term_id not in self.ont:
-            return set()
-        term_set = set()
-        for parent_id in self.ont[term_id]['part_of']:
-            if parent_id in self.ont:
-                term_set.add(parent_id)
-        return term_set
-
-    # get the root terms
     def get_roots(self, term_id):
         if term_id not in self.ont:
             return set()
         root_set = set()
-        for term in self.get_ancestors(term_id):
+        for term in self.get_root_ancestors(term_id):
             if term not in self.ont:
                 continue
             if len(self.get_parents(term)) == 0:
@@ -206,6 +216,7 @@ class Ontology(object):
     def get_namespace(self, term_id):
         return self.ont[term_id]['namespace']
 
+    # all children
     def get_term_set(self, term_id):
         if term_id not in self.ont:
             return set()
@@ -220,7 +231,7 @@ class Ontology(object):
                     q.append(ch_id)
         return term_set
 
-    # adjustment
+    # only one layer children
     def get_child_set(self, term_id):
         if term_id not in self.ont:
             return set()
@@ -229,196 +240,6 @@ class Ontology(object):
             for ch_id in self.ont[term_id]['children']:
                 term_set.add(ch_id)
         return term_set
-
-    # adjustment
-    def transmit(self, term_id):
-        if term_id not in self.ont:
-            return set()
-        term_set = set()
-        q = deque()
-        q.append(term_id)
-        while (len(q) > 0):
-            t_id = q.popleft()
-            if t_id not in term_set:
-                term_set.add(t_id)
-                for parent_id in (self.ont[t_id]['is_a'] +
-                                  self.ont[t_id]['part_of']):
-                    if parent_id in self.ont:
-                        q.append(parent_id)
-        # terms_set.remove(term_id)
-        return term_set
-
-
-# Customized pytorch Dateset for annotated sequences
-class AnnotatedSequences(Dataset):
-    def __init__(self,
-                 data_frame,
-                 terms,
-                 transform=None,
-                 target_transform=None,
-                 data_type='one-hot'):
-        super().__init__()
-        # convert terms to dict
-        terms_dict = {v: i for i, v in enumerate(terms)}
-        # convert to tensor
-        if data_type in ['one-hot', 'One-hot']:
-            data_tensor, labels = self.df_to_tensor(data_frame, len(terms),
-                                                    terms_dict)
-        if data_type in ['label-index', 'Label-index']:
-            data_tensor, labels = self.df_to_tensor_label_index(
-                data_frame, len(terms), terms_dict)
-        # self.
-        self.data_type = data_type
-        self.terms = terms
-        self.nb_classes = len(terms)
-        self.labels = labels
-        self.data = data_tensor
-        self.transform = transform
-        self.target_transform = target_transform
-
-    def __len__(self):
-        if self.data_type in ['one-hot', 'One-hot']:
-            return len(self.data)
-        if self.data_type in ['label-index', 'Label-index']:
-            return self.data.size()[1]
-
-    def __getitem__(self, idx):
-        if self.data_type in ['one-hot', 'One-hot']:
-            data = self.data[idx]
-            label = self.labels[idx]
-        if self.data_type in ['label-index', 'Label-index']:
-            data = self.data[:, idx]
-            label = self.labels[:, idx]
-        if self.transform:
-            data = self.transform(data)
-        if self.target_transform:
-            label = self.target_transform(label)
-        return data, label
-
-    def df_to_tensor(self, df, nb_classes, terms_dict):
-        size = len(df)
-        # [batch, num_aa_feature, seq_len]
-        data_onehot = np.zeros((len(df), 21, MAXLEN), dtype=np.float32)
-        # [batch, num_classes]
-        labels = np.zeros((len(df), nb_classes), dtype=np.int32)
-
-        for i, row in enumerate(df.itertuples()):
-            seq = row.sequences
-            onehot = to_onehot(seq)
-            data_onehot[i, :, :] = onehot
-            for t_id in row.prop_annotations:
-                if t_id in terms_dict:
-                    labels[i, terms_dict[t_id]] = 1
-
-        data_onehot = torch.from_numpy(data_onehot).float()
-        labels = torch.from_numpy(labels).int()
-        return data_onehot, labels
-
-    # data type for transformer
-    def df_to_tensor_label_index(self, df, nb_classes, terms_dict):
-        size = len(df)
-        # [seq_len, batch]
-        data_index = np.zeros((MAXLEN, len(df)), dtype=np.float32)
-        # [num_classes, batch]
-        labels = np.zeros((nb_classes, len(df)), dtype=np.int32)
-
-        for i, row in enumerate(df.itertuples()):
-            seq = row.sequences
-            label_index = to_label_index(seq)
-            data_index[:, i] = label_index
-            for t_id in row.prop_annotations:
-                if t_id in terms_dict:
-                    labels[terms_dict[t_id], i] = 1
-
-        data_index = torch.from_numpy(data_index).int()
-        labels = torch.from_numpy(labels).int()
-        return data_index, labels
-
-
-class EsmDataset(Dataset):
-    def __init__(self, data_df, terms, batch_converter):
-        self.len_df = len(data_df)
-        nb_classes = len(terms)
-        terms_dict = {v: i for i, v in enumerate(terms)}
-        self.data, self.labels = self.data_to_tensor(data_df, terms_dict,
-                                                     nb_classes,
-                                                     batch_converter)
-
-    def __len__(self):
-        return self.len_df
-
-    def __getitem__(self, idx):
-        data = self.data[idx, :]
-        label = self.labels[idx, :]
-        return data, label
-
-    def data_to_tensor(self, data_df, terms_dict, nb_classes, batch_converter):
-        labels = np.zeros((len(data_df), nb_classes), dtype=np.int32)
-        esm_input = data_df.iloc[:, [1, 3]].values
-
-        convert_labels, convert_strs, convert_tokens = batch_converter(
-            esm_input)
-        convert_tokens = convert_tokens[:, :1024]
-
-        for i, row in enumerate(data_df.itertuples()):
-            for t_id in row.prop_annotations:
-                if t_id in terms_dict:
-                    labels[i, terms_dict[t_id]] = 1
-
-        labels = torch.from_numpy(labels).int()
-
-        return convert_tokens, labels
-
-
-class PadEsmDataset(Dataset):
-    def __init__(self, data_df, terms, batch_converter):
-        self.len_df = len(data_df)
-        nb_classes = len(terms)
-        terms_dict = {v: i for i, v in enumerate(terms)}
-        self.data_df = data_df
-        self.data, self.labels = self.data_to_tensor(self.data_df, terms_dict,
-                                                     nb_classes,
-                                                     batch_converter)
-
-    def __len__(self):
-        return self.len_df
-
-    def __getitem__(self, idx):
-        data = self.data[idx, :]
-        label = self.labels[idx, :]
-        seq_mask = torch.from_numpy(np.array(self.data_df.iloc[idx, 3]))
-        return data, label, seq_mask
-
-    def data_to_tensor(self, data_df, terms_dict, nb_classes, batch_converter):
-        labels = np.zeros((len(data_df), nb_classes), dtype=np.int32)
-        esm_input = data_df.iloc[:, [0, 1]].values
-
-        convert_labels, convert_strs, convert_tokens = batch_converter(
-            esm_input)
-        convert_tokens = convert_tokens[:, :1024]
-
-        for i, row in enumerate(data_df.itertuples()):
-            for t_id in row.prop_annotations:
-                if t_id in terms_dict:
-                    labels[i, terms_dict[t_id]] = 1
-
-        labels = torch.from_numpy(labels).int()
-
-        return convert_tokens, labels
-
-
-class EsmEmbedDataset(Dataset):
-    def __init__(self, data_df):
-        self.len_df = len(data_df)
-        self.data = data_df
-
-    def __len__(self):
-        return self.len_df
-
-    def __getitem__(self, idx):
-        data = torch.from_numpy(np.array(self.data.iloc[idx, 0]))
-        label = torch.from_numpy(np.array(self.data.iloc[idx, 1])).int()
-        return data, label
 
 
 # ------------------------------------------------------------------------------------------
@@ -476,7 +297,7 @@ def set_random_seed(seed=10, deterministic=False, benchmark=False):
         torch.backends.cudnn.benchmark = True
 
 
-#################contrast training###########################
+# contrast training
 class con_pair_dataset(Dataset):
     def __init__(self,
                  con_pair,
