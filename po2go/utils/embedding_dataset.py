@@ -4,10 +4,12 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
+
 class EmbeddingDataset(Dataset):
     """ESMDataset."""
+
     def __init__(self,
-                 label_map:dict,
+                 label_map: dict,
                  root_path: str = 'dataset/',
                  file_name: str = 'xxx.pkl'):
         super().__init__()
@@ -35,10 +37,7 @@ class EmbeddingDataset(Dataset):
 
     def load_dataset(self, data_path):
         df = pd.read_pickle(data_path)
-        try:
-            embeddings = list(df['esm_embeddings'])
-        except:
-            embeddings = list(df['embeddings'])
+        embeddings = list(df['embeddings'])
         label = list(df['prop_annotations'])
         assert len(embeddings) == len(label)
         return embeddings, label

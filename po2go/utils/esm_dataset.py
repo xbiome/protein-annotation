@@ -1,18 +1,16 @@
 import gc
-import os
-import random
 from typing import Dict
-
 import esm
-import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
 from partialgo.utils.constant import DEFAULT_ESM_MODEL, ESM_LIST
 
+
 class EsmDataset(Dataset):
     """ESMDataset."""
+
     def __init__(self,
                  test_df: pd.DataFrame,
                  model_dir: str = 'esm1b_t33_650M_UR50S',
@@ -87,8 +85,8 @@ class EsmDataset(Dataset):
         length = len(sequence)
         return sequence, self.mask_length(length)
 
-    def mask_length(self, length:int):
-        masked_length = torch.cat((torch.ones((1, length)), torch.zeros((1, self.max_length-1-length))), dim=1)
+    def mask_length(self, length: int):
+        masked_length = torch.cat((torch.ones((1, length)), torch.zeros((1, self.max_length - 1 - length))), dim=1)
         return masked_length
 
     def collate_fn(self, examples) -> Dict[str, torch.Tensor]:
@@ -120,6 +118,7 @@ class EsmDataset(Dataset):
         encoded_inputs['masked_lengths'] = torch.cat(masked_length_list, dim=0)
 
         return encoded_inputs
+
 
 if __name__ == '__main__':
     from torch.utils.data import DataLoader

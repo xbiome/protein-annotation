@@ -54,7 +54,7 @@ parser.add_argument('--namespace',
 parser.add_argument('--model',
                     metavar='MODEL',
                     default='po2go',
-                    help='model architecture: (default: p2go)')
+                    help='model architecture: (default: po2go)')
 parser.add_argument('--resume',
                     default=None,
                     type=str,
@@ -319,14 +319,14 @@ def main(args):
     )
     # define loss function (criterion) and optimizer
     # optimizer and lr_policy
-    optimizer = optim.Adam(filter(
+    optimizer = optim.AdamW(filter(
         lambda p: p.requires_grad,
         model.parameters(),
     ),
-                            lr=args.lr,
-                            weight_decay=args.weight_decay)
+        lr=args.lr,
+        weight_decay=args.weight_decay)
     # lr_policy = None
-    lr_policy = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.8)
+    lr_policy = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
 
     if args.distributed:
         # For multiprocessing distributed, DistributedDataParallel constructor

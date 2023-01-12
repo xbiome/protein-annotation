@@ -22,7 +22,7 @@ class PO2GO(nn.Module):
 
         # protein projector
         self.q = self.init_predictor(self.protein_dim,
-                self.latent_dim, 1024, 1024, 0.2)
+                                     self.latent_dim, 1024, 1024, 0.2)
         # term projector
         self.k = nn.Linear(self.term_dim, self.latent_dim)
         # probility predictor
@@ -30,7 +30,6 @@ class PO2GO(nn.Module):
         self.fc2 = nn.Linear(prob_predict_temp_dim, self.nb_classes)
 
 
-    # 针对ESM1b的输出加BatchNorm好一点，而针对相似度端不用会好一点。
     def init_predictor(self, in_dim, out_dim, temp_dim=1024, norm_dim=1024, drop=0.):
         return nn.Sequential(
             nn.Linear(in_dim, temp_dim),
@@ -64,7 +63,7 @@ if __name__ == '__main__':
     protein_embedding = torch.rand((4, 1280))
     label = torch.zeros((4, 10000))
     model = PO2GO(terms_emb=node_embedding,
-                 protein_dim=1280,
-                 latent_dim=768,
-                 prob_predict_temp_dim=1280)
+                  protein_dim=1280,
+                  latent_dim=768,
+                  prob_predict_temp_dim=1280)
     outs = model(protein_embedding, label)

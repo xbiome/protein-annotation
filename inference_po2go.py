@@ -43,7 +43,7 @@ parser.add_argument('--model',
                     default='po2go',
                     help='model architecture: (default: po2go)')
 parser.add_argument('--resume',
-                    default=None,
+                    default='work_dirs/po2go_mfo/model_best.pth.tar',
                     type=str,
                     metavar='PATH',
                     help='path to latest checkpoint (default: none)')
@@ -153,7 +153,7 @@ def main(args):
         test_df['labels'] = list(test_labels)
         test_df['preds'] = list(preds)
         df_path = os.path.join(args.data_path,
-                               args.namespace + '_p2go_predictions' + '.pkl')
+                               args.namespace + '_po2go_predictions' + '.pkl')
         test_df.to_pickle(df_path)
         logger.info(f'Saving results to {df_path}')
         true_labels = np.concatenate(test_labels, axis=0)

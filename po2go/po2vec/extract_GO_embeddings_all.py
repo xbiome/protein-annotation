@@ -15,7 +15,7 @@ parser.add_argument('--model-file',
                     '-mf',
                     default='models/part_order_400.pth',
                     type=str,
-                    help='A DataFrame stored all terms')
+                    help='model weights file stored embedidngs of all terms')
 parser.add_argument('--out-file',
                     '-of',
                     default='data/terms_all_embeddings.pkl',
