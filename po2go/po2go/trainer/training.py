@@ -91,6 +91,7 @@ def train(model,
                                              lr=learning_rate))
     return OrderedDict([('loss', losses_m.avg)])
 
+
 def predict(model, loader, use_amp, logger, log_interval=10):
     batch_time_m = AverageMeter('Time', ':6.3f')
     data_time_m = AverageMeter('Data', ':6.3f')
@@ -148,6 +149,7 @@ def predict(model, loader, use_amp, logger, log_interval=10):
     test_auc = compute_roc(true_labels, pred_labels)
     metrics = OrderedDict([('loss', losses_m.avg), ('auc', test_auc)])
     return (pred_labels, true_labels), metrics
+
 
 def evaluate(model, loader, use_amp, logger, log_interval=10):
     batch_time_m = AverageMeter('Time', ':6.3f')
@@ -207,19 +209,23 @@ def evaluate(model, loader, use_amp, logger, log_interval=10):
     # avg_auc
     avg_auc = compute_roc(true_labels, pred_labels)
     max_f1, aupr, max_f1_thresh = compute_aupr_fmax(true_labels, pred_labels)
-    metrics = OrderedDict([('loss', losses_m.avg), ('auc', avg_auc),('fmax',max_f1),('aupr',aupr),('threshold',max_f1_thresh)])
+    metrics = OrderedDict([('loss', losses_m.avg), ('auc', avg_auc), ('fmax', max_f1), ('aupr', aupr), ('threshold', max_f1_thresh)])
     return metrics
 
+
 from sklearn import metrics
+
+
 def compute_aupr_fmax(labels, preds):
-    precision,recall,threshold = metrics.precision_recall_curve(labels.flatten(), preds.flatten())
+    precision, recall, threshold = metrics.precision_recall_curve(labels.flatten(), preds.flatten())
     numerator = 2 * recall * precision
     denom = recall + precision
-    f1_scores = np.divide(numerator, denom, out=np.zeros_like(denom), where=(denom!=0))
+    f1_scores = np.divide(numerator, denom, out=np.zeros_like(denom), where=(denom != 0))
     max_f1 = np.max(f1_scores)
     max_f1_thresh = threshold[np.argmax(f1_scores)]
-    aupr= metrics.auc(recall,precision)
+    aupr = metrics.auc(recall, precision)
     return max_f1, aupr, max_f1_thresh
+
 
 def train_loop(model,
                optimizer,

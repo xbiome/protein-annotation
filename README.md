@@ -13,11 +13,6 @@ This repository contains script which were used to build and train the PO2Vec an
 * To install python dependencies run:
   `pip install -r requirements.txt`
 
-
-
-## Data
-
-
 ## Installation
 The sources for Deepfold can be downloaded from the `Github repo`.
 
@@ -42,9 +37,12 @@ python setup.py install
 
 ## Scripts
 The scripts require GeneOntology in OBO Format.
-* uni2pandas.py - This script is used to convert data from UniProt database format to pandas dataframe.
-* po2go_data.py - This script is used to generate training and testing datasets.
+* preprocess_raw_data.py - This script is used to convert data from UniProt database format to pandas dataframe.
+* prepare_data_seperate_swissprot.py - This script is used to seperate data from UniProt-Swissprot into train and test dataset.
+* prepare_data_seperate_ontologies.py - This script is used to seperate train(test) data into three groups based on annotation ontologies.
+* po2go/po2vec - This folder is used to train PO2Vec model to get terms embeddings.
 * train_po2go.py - This script is used to train the model.
+* inference_po2go.py - This script is used to inference test data to get prediction file.
 * evaluate_*.py - The scripts are used to compute Fmax, Smin and AUPR.
 
 ## Citation
@@ -56,5 +54,3 @@ If you use PO2Vec for your research, or incorporate our learning algorithms in y
 ## New version specifications
 Current dependencies can be found in the requirements.txt file.
 The used Python version is 3.9.12.
-
-
