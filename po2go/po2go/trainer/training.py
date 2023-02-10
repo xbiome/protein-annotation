@@ -5,10 +5,10 @@ import numpy as np
 import torch
 from torch.cuda.amp import autocast
 
-from partialgo.core.metrics.custom_metrics import compute_roc
-from partialgo.utils.metrics import AverageMeter
-from partialgo.utils.model import reduce_tensor, save_checkpoint
-from partialgo.utils.summary import update_summary
+from po2go.po2go.trainer.metrics import compute_roc
+from po2go.po2go.trainer.metrics import AverageMeter
+from po2go.utils.model import reduce_tensor, save_checkpoint
+from po2go.utils.summary import update_summary
 
 
 def get_train_step(model, optimizer, scaler, gradient_accumulation_steps,
