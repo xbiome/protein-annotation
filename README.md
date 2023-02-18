@@ -44,7 +44,7 @@ The scripts require GeneOntology in OBO Format.
 * train_po2go.py - This script is used to train the model.
 - to train a model predict mfo terms run sh: 'python train_po2go.py --namespace mfo -ld 512 -p 768'
 - to train a model predict bpo terms run sh: 'python train_po2go.py --namespace bpo -ld 768 -p 1280'
-- to train a model predict mfo terms run sh: 'python train_po2go.py --namespace mfo -ld 512 -p 896'
+- to train a model predict cco terms run sh: 'python train_po2go.py --namespace cco -ld 512 -p 896'
 - to train a model predict annotated terms run sh: 'python train_po2go.py --namespace annotated -ld 1024 -p 2048'
 * inference_po2go.py - This script is used to inference test data to get prediction file.
 * evaluate_*.py - The scripts are used to compute Fmax, Smin and AUPR.
