@@ -5,7 +5,7 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
-from partialgo.utils.constant import DEFAULT_ESM_MODEL, ESM_LIST
+from po2go.utils.constant import DEFAULT_ESM_MODEL, ESM_LIST
 
 
 class EsmDataset(Dataset):
