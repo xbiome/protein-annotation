@@ -7,9 +7,9 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
-from partialgo.data.esm_dataset import EsmDataset
-from partialgo.models.po2go import PO2GO
-from partialgo.utils.model import load_model_checkpoint
+from po2go.utils.esm_dataset import EsmDataset
+from po2go.po2go.po2go import PO2GO
+from po2go.utils.model import load_model_checkpoint
 
 # 输入文件：fasta蛋白序列
 # 输出文件：csv表格，基因，功能，置信度
