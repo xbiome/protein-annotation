@@ -9,8 +9,8 @@ import pandas as pd
 from sklearn import metrics
 from tqdm import tqdm
 
-from partialgo.data.utils.data_utils import FUNC_DICT, NAMESPACES
-from partialgo.data.utils.ontology import Ontology
+from po2go.utils.data_utils import FUNC_DICT, NAMESPACES
+from po2go.utils.ontology import Ontology
 
 
 sys.path.append('../')
