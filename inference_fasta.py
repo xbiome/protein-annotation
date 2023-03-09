@@ -1,18 +1,14 @@
 import argparse
+import os
 from typing import Sequence
-
 import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
-
 from po2go.utils.esm_dataset import EsmDataset
 from po2go.po2go.po2go import PO2GO
 from po2go.utils.model import load_model_checkpoint
-
-# 输入文件：fasta蛋白序列
-# 输出文件：csv表格，基因，功能，置信度
 
 parser = argparse.ArgumentParser(
     description='Protein function Classification config')
@@ -27,38 +23,26 @@ parser.add_argument('-o',
                     default='data/fasta_prdiction.csv',
                     type=str,
                     help='A csv format prediction results')
-parser.add_argument('--terms-file',
-                    '-tf',
-                    default='data/terms_annotated_embeddings.pkl',
+parser.add_argument('--terms-path',
+                    '-tp',
+                    default='/home/wangbin/protein-annotation/data/',
                     type=str,
                     metavar='PATH',
                     help='path to predicted terms with corresponding embedding')
-parser.add_argument('--resume',
-                    default='work_dirs/po2go_annotated/model_best.pth.tar',
+parser.add_argument('--model-path',
+                    '-mp',
+                    default='/home/wangbin/protein-annotation/work_dirs',
                     type=str,
                     metavar='PATH',
                     help='path to latest checkpoint (default: none)')
-parser.add_argument('-t',
-                    '--threshold',
-                    default=0.459,
-                    type=float,
-                    help='Thresholds affecting prediction sensitivity')
-parser.add_argument('-s',
-                    '--batchsize',
+parser.add_argument('--batchsize',
+                    '-b',
                     default=64,
                     type=int,
                     help='Batchsize size when encoding protein embedding with backbone')
 
 
 def read_fasta(filename):
-    """read fasta file.
-
-    Args:
-        filename (str): path of gene sequence file
-
-    Returns:
-        tuple: tuple of (gene_names, sequences), gene_names and sequences is list.
-    """
     seqs = list()
     names = list()
     seq = ''
@@ -81,15 +65,6 @@ def read_fasta(filename):
 
 
 def get_protein_embedding(test_df: pd.DataFrame, batchsize):
-    """get embedding for each protein.
-
-    Args:
-        test_df (pd.DataFrame): protein sequence DataFrame
-
-    Returns:
-        pd.DataFrame: protein embedding DataFrame
-    """
-
     dataset = EsmDataset(test_df)
     loader = DataLoader(dataset,
                         batch_size=batchsize,
@@ -153,38 +128,70 @@ def get_model(file_terms_annotated: str, model_path, model_args: dict):
     return model, terms_annotated
 
 
+def get_namespace_model(namespace: str, model_args: dict, terms_path, model_path):
+    # for namespace in ['mfo', 'bpo', 'cco']:
+    terms_file_name = f'terms_{namespace}_embeddings.pkl'
+    terms = pd.read_pickle(os.path.join(terms_path, terms_file_name))
+    embeddings = np.concatenate([np.array(embedding, ndmin=2) for embedding in terms.embeddings.values])
+    terms_embedding = torch.Tensor(embeddings)
+    terms_embedding = terms_embedding.cuda()
+    # label_map = {term:i for i,term in enumerate(terms.terms.values)}
+    model = PO2GO(terms_embedding, **model_args)
+    checkpoint_path = os.path.join(model_path, f'po2go_swissprot_{namespace}/model_best.pth.tar')
+    model_state, _ = load_model_checkpoint(checkpoint_path)
+    model.load_state_dict(model_state)
+    model = model.cuda().eval()
+    return model, terms.terms.values
+
 # 预测
 
-def get_preds(embedding_loader, model):
-    pred_all = []
+
+def get_preds(embedding_loader, model_mfo, model_bpo, model_cco):
+    pred_all_mfo = []
+    pred_all_bpo = []
+    pred_all_cco = []
     for batch in embedding_loader:
         batch = {key: val.cuda() for key, val in batch.items()}
         with torch.no_grad():
-            outputs = model(**batch)
+            outputs = model_mfo(**batch)
             logits = outputs[0]
         preds = logits.sigmoid()
         preds = preds.detach().cpu().numpy()
-        pred_all.append(preds)
+        pred_all_mfo.append(preds)
+        with torch.no_grad():
+            outputs = model_bpo(**batch)
+            logits = outputs[0]
+        preds = logits.sigmoid()
+        preds = preds.detach().cpu().numpy()
+        pred_all_bpo.append(preds)
+        with torch.no_grad():
+            outputs = model_cco(**batch)
+            logits = outputs[0]
+        preds = logits.sigmoid()
+        preds = preds.detach().cpu().numpy()
+        pred_all_cco.append(preds)
+    pred_all_mfo = np.concatenate(pred_all_mfo, axis=0)
+    pred_all_bpo = np.concatenate(pred_all_bpo, axis=0)
+    pred_all_cco = np.concatenate(pred_all_cco, axis=0)
 
-    pred_all = np.concatenate(pred_all, axis=0)
-
-    return pred_all
-
+    return pred_all_mfo, pred_all_bpo, pred_all_cco
 
 # 4.产生预测结果：根据MF、BP、CC的阈值来产生预测结果，合并结果
 
+
 def preds2go(preds, terms: Sequence, th: float):
     filted_terms_annotated = []
-    for preds in preds:
-        idxs = preds > th
+    for pred in preds:
+        idxs = pred > th
         filted_terms = terms[idxs]
-        filted_terms = [term + f'({pred:.2f})' for term, pred in zip(filted_terms, preds[idxs])]
+        # go_file = "/home/wangbin/protein-annotation/data/go.obo"
+        # go = Ontology(go_file)
+        # filted_terms_annotated.append([go_id+'('+go.get_term(go_id)['name']+')' for go_id in filted_terms])
         filted_terms_annotated.append(filted_terms)
-
     return filted_terms_annotated
 
 
-def main(fasta_file, out_file, terms_file, model_path, threshold, batchsize):
+def main(fasta_file, out_file, terms_path, model_path, batchsize):
     # 1. read fasta, 返回(基因,序列)的dataframe
     # 输入的fasta文件路径
     names, seqs = read_fasta(fasta_file)
@@ -193,23 +200,48 @@ def main(fasta_file, out_file, terms_file, model_path, threshold, batchsize):
     # 2.生成蛋白质embedding：输入(基因，序列)的dataframe，返回(基因，embedding)的dataframe
     test_df = get_protein_embedding(test_df, batchsize)
     # 3.预测阶段：为每个蛋白质计算terms的概率
-    model_args_annotated = {'protein_dim': 1280, 'latent_dim': 1024, 'prob_predict_temp_dim': 2048}
-    model, terms_annotated = get_model(terms_file, model_path, model_args_annotated)
+    model_args_mfo = {'protein_dim': 1280, 'latent_dim': 512, 'prob_predict_temp_dim': 768}
+    model_args_bpo = {'protein_dim': 1280, 'latent_dim': 768, 'prob_predict_temp_dim': 1280}
+    model_args_cco = {'protein_dim': 1280, 'latent_dim': 512, 'prob_predict_temp_dim': 896}
+    model_mfo, model_bpo, model_cco = None, None, None
+    for namespace in ['mfo', 'bpo', 'cco']:
+        exec(f'model_args = model_args_{namespace}')
+        exec(f'model_{namespace}, terms_{namespace} = get_namespace_model(namespace, model_args, terms_path, model_path)')
+
+    model_mfo, terms_mfo = get_namespace_model('mfo', model_args_mfo, terms_path, model_path)
+    model_bpo, terms_bpo = get_namespace_model('bpo', model_args_bpo, terms_path, model_path)
+    model_cco, terms_cco = get_namespace_model('cco', model_args_cco, terms_path, model_path)
+    # model, terms_annotated = get_model(terms_file, model_path, model_args_annotated)
     embedding_dataset = EmbeddingDataset(test_df)
     embedding_loader = DataLoader(embedding_dataset,
                                   batch_size=batchsize,
                                   num_workers=4)
 
-    pred_all = get_preds(embedding_loader, model)
-    test_df['annotated_preds'] = list(pred_all)
-
+    pred_all_mfo, pred_all_bpo, pred_all_cco = get_preds(embedding_loader, model_mfo, model_bpo, model_cco)
     # 4.产生预测结果：合并结果
-    filted_terms_annotated = preds2go(test_df.annotated_preds, terms_annotated, threshold)
-    test_df['annotated_preds'] = filted_terms_annotated
+    th_mfo = 0.52
+    th_bpo = 0.444
+    th_cco = 0.445
+    filted_terms_mfo = preds2go(pred_all_mfo, terms_mfo, th_mfo)
+    filted_terms_bpo = preds2go(pred_all_bpo, terms_bpo, th_bpo)
+    filted_terms_cco = preds2go(pred_all_cco, terms_cco, th_cco)
+
+    all = []
+    for mf, bp, cc in zip(filted_terms_mfo, filted_terms_bpo, filted_terms_cco):
+        mf = list(mf)
+        bp = list(bp)
+        cc = list(cc)
+        mf.extend(bp)
+        mf.extend(cc)
+        all.append(mf)
+
+    test_df['annotated_preds'] = all
     df_pred = test_df[['names', 'annotated_preds']]
     df_pred.to_csv(out_file)
 
 
 if __name__ == '__main__':
+    # os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    # os.environ["CUDA_VISIBLE_DEVICES"] = "1"
     args = parser.parse_args()
-    main(args.input_file, args.output_file, args.terms_file, args.resume, args.threshold, args.batchsize)
+    main(args.input_file, args.output_file, args.terms_path, args.model_path, args.batchsize)
