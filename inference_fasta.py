@@ -9,6 +9,7 @@ from tqdm import tqdm
 from po2go.utils.esm_dataset import EsmDataset
 from po2go.po2go.po2go import PO2GO
 from po2go.utils.model import load_model_checkpoint
+from po2go.utils.ontology import Ontology
 
 parser = argparse.ArgumentParser(
     description='Protein function Classification config')
@@ -179,15 +180,13 @@ def get_preds(embedding_loader, model_mfo, model_bpo, model_cco):
 # 4.产生预测结果：根据MF、BP、CC的阈值来产生预测结果，合并结果
 
 
-def preds2go(preds, terms: Sequence, th: float):
+def preds2go(preds, go, terms: Sequence, th: float):
     filted_terms_annotated = []
     for pred in preds:
         idxs = pred > th
         filted_terms = terms[idxs]
-        # go_file = "/home/wangbin/protein-annotation/data/go.obo"
-        # go = Ontology(go_file)
-        # filted_terms_annotated.append([go_id+'('+go.get_term(go_id)['name']+')' for go_id in filted_terms])
-        filted_terms_annotated.append(filted_terms)
+        filted_terms_annotated.append([go_id + '(' + go.get_term(go_id)['name'] + ')' for go_id in filted_terms])
+        # filted_terms_annotated.append(filted_terms)
     return filted_terms_annotated
 
 
@@ -222,9 +221,11 @@ def main(fasta_file, out_file, terms_path, model_path, batchsize):
     th_mfo = 0.52
     th_bpo = 0.444
     th_cco = 0.445
-    filted_terms_mfo = preds2go(pred_all_mfo, terms_mfo, th_mfo)
-    filted_terms_bpo = preds2go(pred_all_bpo, terms_bpo, th_bpo)
-    filted_terms_cco = preds2go(pred_all_cco, terms_cco, th_cco)
+    go_file = os.path.join(terms_path, 'go.obo')
+    go = Ontology(go_file)
+    filted_terms_mfo = preds2go(pred_all_mfo, go, terms_mfo, th_mfo)
+    filted_terms_bpo = preds2go(pred_all_bpo, go, terms_bpo, th_bpo)
+    filted_terms_cco = preds2go(pred_all_cco, go, terms_cco, th_cco)
 
     all = []
     for mf, bp, cc in zip(filted_terms_mfo, filted_terms_bpo, filted_terms_cco):
