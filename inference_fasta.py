@@ -30,15 +30,15 @@ parser.add_argument('-o',
                     help='A csv format prediction results')
 parser.add_argument('--terms-file',
                     '-tf',
-                    default='data/terms_annotated_embeddings.pkl',
+                    default='home/wangbin/data/terms_annotated_embeddings.pkl',
                     type=str,
                     metavar='PATH',
                     help='path to predicted terms with corresponding embedding')
 parser.add_argument('--resume',
-                    default='work_dirs/po2go_annotated/model_best.pth.tar',
+                    default='home/wangbin/work_dirs/po2go_annotated/model_best.pth.tar',
                     type=str,
                     metavar='PATH',
-                    help='path to latest checkpoint (default: none)')
+                    help='path to best checkpoint (default: none)')
 parser.add_argument('-t',
                     '--threshold',
                     default=0.46,

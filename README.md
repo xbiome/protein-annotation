@@ -61,7 +61,9 @@ python train_po2go.py --namespace annotated -ld 768 -p 1280
 * inference_po2go.py - This script is used to inference test data to get prediction file.
 * evaluate_*.py - The scripts are used to compute Fmax, Smin and AUPR.
 * inference_fasta.py -This script is used to inference fasta format data by annotated model.
-
+```bash
+python inference_fasta.py -i input.fasta -o output.csv -b batchsize
+```
 
 ## Citation
 
