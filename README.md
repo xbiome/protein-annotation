@@ -64,6 +64,9 @@ python train_po2go.py --namespace annotated -ld 768 -p 1280
 ```bash
 python inference_fasta.py -i input.fasta -o output.csv -b batchsize
 ```
+```bash
+python inference_fasta_cpu.py -i input.fasta -o output.csv -b batchsize -T number_cpucore
+```
 
 ## Citation
 
