@@ -106,8 +106,8 @@ def get_pairs(terms, terms_dict, ancestor_dict, root_dict, parents_dict):
         third_list = []
         temp_list[1] = terms_dict[item]
         temp = list()
-        if parents_dict[item] is not None:
-            for j in parents_dict[item]:
+        if len(ancestor_dict[item]) != 0:
+            for j in ancestor_dict[item]:
                 temp.append(terms_dict[j])
         third_list.append(list(temp[:]))
         temp_list[2] = third_list[:]
