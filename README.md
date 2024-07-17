@@ -72,7 +72,18 @@ python inference_fasta_cpu.py -i input.fasta -o output.csv -b batchsize -T numbe
 
 If you use PO2Vec for your research, or incorporate our learning algorithms in your work, please cite:
 
-
+```
+@article{li2024partial,
+  title={Partial order relation--based gene ontology embedding improves protein function prediction},
+  author={Li, Wenjing and Wang, Bin and Dai, Jin and Kou, Yan and Chen, Xiaojun and Pan, Yi and Hu, Shuangwei and Xu, Zhenjiang Zech},
+  journal={Briefings in Bioinformatics},
+  volume={25},
+  number={2},
+  pages={bbae077},
+  year={2024},
+  publisher={Oxford University Press}
+}
+```
 
 ## New version specifications
 Current dependencies can be found in the requirements.txt file.
