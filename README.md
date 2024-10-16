@@ -47,7 +47,7 @@ python setup.py install
 | name  | description | file type | 
 |:--------|:---|--------:|
 | `figs`    | folder contain figures from the paper| `.jpg` file|
-| `data`    | Folder containing PO2Vec embeddings, protein sequences, label files for model training, and `go.obo` file|'.pkl' file|
+| `data`    | Folder containing PO2Vec embeddings, protein sequences, label files for model training, and `go.obo` file| `.pkl` file|
 | `po2go`   | Core code for **PO2GO** and **PO2Vec** algorithms| `.py` files|
 | `po2go/po2vec`   | Scripts for the **PO2Vec** contrastive learning algorithm for GO embedding| `.py` files|
 | `po2go/po2go`    | Protein function prediction codes for **PO2GO**| `.py` files|
@@ -73,8 +73,8 @@ To use the PO2GO algorithm for more accurate protein function prediction, a mode
 
 | name  | description | file type | 
 |:--------|:---|--------:|
-| `inference_fasta.py`    | Inference script for GO terms using protein sequences in FASTA format. Outputs a CSV table. Requires model weights, `go.obo`, and `terms_annotated_embeddings.pkl`| '.py' file|
-| `inference_fasta_cpu.py`    | CPU-based version of inference_fasta.py for users without GPU access| '.py' file|
+| `inference_fasta.py`    | Inference script for GO terms using protein sequences in FASTA format. Outputs a CSV table. Requires model weights, `go.obo`, and `terms_annotated_embeddings.pkl`| `.py` file|
+| `inference_fasta_cpu.py`    | CPU-based version of inference_fasta.py for users without GPU access| `.py` file|
 
 
 ## Commond line usage
